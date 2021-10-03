@@ -1,10 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Data;
-using finebooks_api.Models;
+﻿using System.Data;
 using System.Data.SqlClient;
 
 using Microsoft.AspNetCore.Mvc;
@@ -25,26 +19,47 @@ namespace finebooks_api.Controllers
         [HttpGet]
         public JsonResult Get()
         {
-            string query = @"SELECT * FROM dbo.Department";
-            DataTable table = new();
+            DataTable dataTable = new();
+            SqlDataReader sqlDataReader;
 
-            string sqlDataSource = _configuration.GetConnectionString("FinebooksConn");
-
-            SqlDataReader myReader;
-            using (SqlConnection myCon = new(sqlDataSource))
+            string query = @"EXEC SelectAllUser";
+            string sqlDataSource = _configuration.GetConnectionString("FinebooksConnection");
+            
+            using (SqlConnection dbConnection = new(sqlDataSource))
             {
-                myCon.Open();
-                using SqlCommand myCommand = new(query, myCon);
-                myReader = myCommand.ExecuteReader();
-                table.Load(myReader);
+                dbConnection.Open();
+                using SqlCommand sqlCommand = new(query, dbConnection);
+                sqlDataReader = sqlCommand.ExecuteReader();
+                dataTable.Load(sqlDataReader);
 
-                myReader.Close();
-                myCon.Close();
+                sqlDataReader.Close();
+                dbConnection.Close();
+            }
+            
+            return new JsonResult(dataTable);
+        }
+
+        [HttpGet("{pUsername}")]
+        public JsonResult Get(string pUsername)
+        {
+            DataTable dataTable = new();
+            SqlDataReader sqlDataReader;
+
+            string query = @"EXEC SelectUserByUsername @username = " + pUsername;
+            string sqlDataSource = _configuration.GetConnectionString("FinebooksConnection");
+
+            using (SqlConnection dbConnection = new(sqlDataSource))
+            {
+                dbConnection.Open();
+                using SqlCommand sqlCommand = new(query, dbConnection);
+                sqlDataReader = sqlCommand.ExecuteReader();
+                dataTable.Load(sqlDataReader);
+
+                sqlDataReader.Close();
+                dbConnection.Close();
             }
 
-            
-
-            return new JsonResult(table);
+            return new JsonResult(dataTable);
         }
     }
 }
